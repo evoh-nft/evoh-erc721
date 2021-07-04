@@ -6,6 +6,7 @@ contract EvohClaimable is EvohERC721 {
 
     uint256 public maxTotalSupply;
     bytes32 public hashRoot;
+    address public owner;
 
     struct ClaimData {
         bytes32 root;
@@ -24,11 +25,13 @@ contract EvohClaimable is EvohERC721 {
     )
         EvohERC721(_name, _symbol)
     {
+        owner = msg.sender;
         hashRoot = _hashRoot;
         maxTotalSupply = _maxTotalSupply;
     }
 
     function addClaimRoots(bytes32[] calldata _merkleRoots, uint256[] calldata _claimLimits) external {
+        require(msg.sender == owner);
         for (uint256 i = 0; i < _merkleRoots.length; i++) {
             ClaimData storage data = claimData.push();
             data.root = _merkleRoots[i];
