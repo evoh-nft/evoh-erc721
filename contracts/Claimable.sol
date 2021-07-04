@@ -28,10 +28,12 @@ contract EvohClaimable is EvohERC721 {
         maxTotalSupply = _maxTotalSupply;
     }
 
-    function addClaimRoot(bytes32 _merkleRoot, uint256 _claimLimit) public {
-        ClaimData storage data = claimData.push();
-        data.root = _merkleRoot;
-        data.limit = _claimLimit;
+    function addClaimRoots(bytes32[] calldata _merkleRoots, uint256[] calldata _claimLimits) external {
+        for (uint256 i = 0; i < _merkleRoots.length; i++) {
+            ClaimData storage data = claimData.push();
+            data.root = _merkleRoots[i];
+            data.limit = _claimLimits[i];
+        }
     }
 
     function isClaimed(uint256 _claimIndex, address _account) public view returns (bool) {
