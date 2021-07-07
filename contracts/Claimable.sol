@@ -45,36 +45,20 @@ contract EvohClaimable is EvohERC721 {
 
     /**
         @notice Claim an NFT using an eligible account
-        @dev Claiming requires two proofs. The "claim proof" validates that the calling
-             address is eligible to claim the airdrop. The "hash proof" valides that the
-             given IPFS hash for the airdropped NFT is valid, and comes next within the
-             sequence of claimable hashes.
         @param _claimIndex Index of the claim hash to validate `_claimProof` against
-        @param _hashIndex Index of the hash proof being used. Hash proofs must be
-                          provided sequentially in order to be valid.
-        @param _hash IPFS hash of the NFT being claimed
         @param _claimProof Proof to validate against the claim root
-        @param _hashProof Proof to validate against the hash root
      */
     function claim(
         uint256 _claimIndex,
-        uint256 _hashIndex,
-        string calldata _hash,
-        bytes32[] calldata _claimProof,
-        bytes32[] calldata _hashProof
+        bytes32[] calldata _claimProof
     )
         external
     {
         uint256 claimed = totalSupply;
         require(maxTotalSupply > claimed, "All NFTs claimed");
 
-        // Verify the NFT hash
-        bytes32 node = keccak256(abi.encodePacked(_hashIndex, _hash));
-        require(_hashIndex == claimed, "Incorrect hash index");
-        require(verify(_hashProof, hashRoot, node), "Invalid hash proof");
-
         // Verify the claim
-        node = keccak256(abi.encodePacked(msg.sender));
+        bytes32 node = keccak256(abi.encodePacked(msg.sender));
         ClaimData storage data = claimData[_claimIndex];
 
         require(_claimIndex < claimData.length, "Invalid merkleIndex");
@@ -85,11 +69,30 @@ contract EvohClaimable is EvohERC721 {
         // Mark as claimed, write the hash and send the token.
         data.count++;
         data.claimed[msg.sender] = true;
-        tokenURIs[claimed] = _hash;
 
         addOwnership(msg.sender, claimed);
         emit Transfer(address(0), msg.sender, claimed);
         totalSupply = claimed + 1;
+    }
+
+     /**
+        @notice Submit NFT hashes on-chain.
+        @param _indexes Indexes of the hashes being added.
+        @param _hashes IPFS hashes being added.
+        @param _proofs Proofs for the IPFS hashes. These are checked against `hashRoot`.
+     */
+    function submitHashes(
+        uint256[] calldata _indexes,
+        string[] calldata _hashes,
+        bytes32[][] calldata _proofs
+    ) external {
+        require(_indexes.length == _proofs.length);
+        bytes32 root = hashRoot;
+        for (uint256 i = 0; i < _indexes.length; i++) {
+            bytes32 node = keccak256(abi.encodePacked(_indexes[i], _hashes[i]));
+            require(verify(_proofs[i], root, node), "Invalid hash proof");
+            tokenURIs[_indexes[i]] = _hashes[i];
+        }
     }
 
     function verify(
@@ -118,6 +121,5 @@ contract EvohClaimable is EvohERC721 {
         // Check if the computed hash (root) is equal to the provided root
         return computedHash == root;
     }
-
 
 }
