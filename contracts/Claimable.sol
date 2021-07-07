@@ -7,6 +7,7 @@ contract EvohClaimable is EvohERC721 {
     uint256 public maxTotalSupply;
     bytes32 public hashRoot;
     address public owner;
+    uint256 public startTime;
 
     struct ClaimData {
         bytes32 root;
@@ -21,13 +22,15 @@ contract EvohClaimable is EvohERC721 {
         string memory _name,
         string memory _symbol,
         bytes32 _hashRoot,
-        uint256 _maxTotalSupply
+        uint256 _maxTotalSupply,
+        uint256 _startTime
     )
         EvohERC721(_name, _symbol)
     {
         owner = msg.sender;
         hashRoot = _hashRoot;
         maxTotalSupply = _maxTotalSupply;
+        startTime = _startTime;
     }
 
     function addClaimRoots(bytes32[] calldata _merkleRoots, uint256[] calldata _claimLimits) external {
@@ -54,6 +57,7 @@ contract EvohClaimable is EvohERC721 {
     )
         external
     {
+        require(block.timestamp >= startTime, "Cannot claim before start time");
         uint256 claimed = totalSupply;
         require(maxTotalSupply > claimed, "All NFTs claimed");
 
